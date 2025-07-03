@@ -5,6 +5,8 @@ A real-time playing card detection system using YOLOR (You Only Learn One Repres
 ## Overview
 
 This project leverages the YOLOR deep learning model to detect and classify playing cards in real-time. The system is optimized for speed and accuracy, making it suitable for applications such as digital card games, augmented reality, and human-computer interaction.
+![image](https://github.com/user-attachments/assets/137ad941-e0a3-4031-a1ed-5ac057c33f6d)
+
 
 ## Features
 
