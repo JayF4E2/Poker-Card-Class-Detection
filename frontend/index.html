@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poker Hand Detector (Real-Time)</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    body { margin: 0; padding: 0; background: #f0f2f5; color: #333; }
+    .container {
+      max-width: 860px;
+      margin: auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+      margin-top: 4rem;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 2.4rem;
+      color: #111827;
+    }
+    video {
+      border-radius: 12px;
+      max-width: 100%;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .result {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      color: #2563eb;
+    }
+    .cards {
+      font-size: 1.1rem;
+      margin-top: 0.5rem;
+      color: #6b7280;
+    }
+    .hand-info {
+      text-align: left;
+      margin-top: 3rem;
+      border-top: 1px solid #ddd;
+      padding-top: 2rem;
+    }
+    .hand-info h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .hand-info ul {
+      list-style: none;
+      padding-left: 0;
+      line-height: 1.8;
+    }
+    .hand-info li span {
+      font-weight: bold;
+      color: #1e3a8a;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <h1>Poker Hand Detector</h1>
+      <video id="video" autoplay playsinline width="640" height="480"></video>
+      <div class="result" v-if="result">
+        Detected Hand: {{ result }}
+      </div>
+      <div class="cards" v-if="cards.length">
+        Detected Cards: {{ cards.join(', ') }}
+      </div>
+
+      <div class="hand-info">
+        <h2>Jenis-Jenis Kombinasi Kartu Poker</h2>
+        <ul>
+          <li><span>Royal Flush</span>: A, K, Q, J, 10 dengan jenis (suit) yang sama</li>
+          <li><span>Straight Flush</span>: 5 kartu berurutan dengan suit yang sama</li>
+          <li><span>Four of a Kind</span>: Empat kartu dengan rank yang sama</li>
+          <li><span>Full House</span>: Tiga kartu dengan rank sama + dua kartu dengan rank sama</li>
+          <li><span>Flush</span>: Lima kartu dengan suit yang sama, tidak harus berurutan</li>
+          <li><span>Straight</span>: Lima kartu berurutan tetapi suit bisa berbeda</li>
+          <li><span>Three of a Kind</span>: Tiga kartu dengan rank yang sama</li>
+          <li><span>Two Pairs</span>: Dua pasang kartu dengan rank yang sama</li>
+          <li><span>One Pair</span>: Satu pasang kartu dengan rank yang sama</li>
+          <li><span>High Card</span>: Tidak ada kombinasi, nilai tertinggi dari lima kartu</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          result: null,
+          cards: [],
+          intervalId: null
+        }
+      },
+      mounted() {
+        const video = document.getElementById('video');
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          });
+
+        this.intervalId = setInterval(this.captureAndSend, 3000);
+      },
+      beforeUnmount() {
+        clearInterval(this.intervalId);
+      },
+      methods: {
+        captureAndSend() {
+          const video = document.getElementById('video');
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+
+          canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('file', blob, 'frame.jpg');
+
+            fetch('http://192.168.1.6:8000/detect', {
+              method: 'POST',
+              body: formData
+            })
+              .then(res => res.json())
+              .then(data => {
+                this.result = data.deck;
+                this.cards = data.cards || [];
+              })
+              .catch(err => console.error(err));
+          }, 'image/jpeg');
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>
